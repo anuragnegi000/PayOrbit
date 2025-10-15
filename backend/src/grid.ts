@@ -326,3 +326,18 @@ export const completeKYC=async(email:string)=>{
   console.log(kyc);
   return kyc;
 }
+
+export const getVirtualAccounts=async(email:string)=>{
+  const gridClient = new GridClient({
+    environment: "sandbox",
+    apiKey: "8508a9c6-9663-4f6c-b807-d307149b4585",
+    baseUrl: "https://grid.squads.xyz",
+  });
+  const user = await GridUser.findOne({ email});
+  if(!user){
+    throw new Error("User not found");
+  }
+  const virtualResponse=await gridClient.getVirtualAccounts(user.publicKey);
+  console.log(JSON.stringify(virtualResponse.data, null, 2));
+  return virtualResponse;
+}
