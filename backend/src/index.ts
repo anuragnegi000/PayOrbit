@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
-import { completeKYC, createVirtualAccount, gridAccountCreation, verifyOtp, verifyOtpExisting} from "./grid"
+import { checkAndInitAuth, completeKYC, createVirtualAccount, gridAccountCreation, verifyOtp, verifyOtpExisting} from "./grid"
 import bodyParser from "body-parser";
 import {connectDB} from "./db"
+import { virtualAccount } from './virtualAccount';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,17 +31,17 @@ app.post('/create-account', async (req: Request, res: Response) => {
     }
 });
 
-// app.post("/existing-account",async(req:Request,res:Response)=>{
-//     try {
-//         const {email}=req.body
-//         await existingVerfication(email);
-//         res.status(200).send('Existing account verification process initiated. Check logs for details.');
-//     }
-//     catch (error) {
-//         console.error('Error during existing account verification:', error);
-//         res.status(500).send('Internal Server Error');
-//     }
-// })
+app.post("/existing-account",async(req:Request,res:Response)=>{
+    try {
+        const {email}=req.body  
+        await checkAndInitAuth(email);
+        res.status(200).send('Existing account verification process initiated. Check logs for details.');
+    }
+    catch (error) {
+        console.error('Error during existing account verification:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
 
 
 app.post("/verifyOtpExisting",async(req:Request,res:Response)=>{
@@ -57,7 +58,7 @@ app.post("/verifyOtpExisting",async(req:Request,res:Response)=>{
 app.post("/createVirtualAccount",async(req:Request,res:Response)=>{
     try{
         const {email}=req.body;
-        await createVirtualAccount(email);
+        await virtualAccount(email);
         res.status(200).send('Virtual account creation process initiated. Check logs for details.');
     }catch(error){
         console.error('Error during virtual account creation:', error);

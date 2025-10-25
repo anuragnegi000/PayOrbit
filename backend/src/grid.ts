@@ -96,14 +96,21 @@ export const gridAccountCreation = async (email: string,fullName:string) => {
 
     // Save session for existing account
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    
+    // Get existing session to preserve signers
+    const existingSession = await GridSession.findOne({ email });
+    const existingSigners = existingSession?.signers || [];
+    
+    console.log(`📋 Found ${existingSigners.length} signers from previous session`);
+    
     const savedSession = await GridSession.findOneAndUpdate(
       { email },
       {
         sessionSecrets,
+        signers: existingSigners, // Preserve existing signers
         expiresAt,
         otpSentAt: new Date(),
-        status: "pending_verification",
-        // Keep existing signers if they exist
+        status: "pending_login", // IMPORTANT: Set to pending_login for existing accounts
       },
       { upsert: true, new: true }
     );
@@ -167,6 +174,7 @@ export const verifyOtpExisting = async (otpCode: string, email: string) => {
   if (!session) {
     throw new Error("No session found for this email");
   }
+  console.log(`🔍 Session status: ${session}`);
   const authenticatedAccount = await gridClient.completeAuth({
     user: {
       email: email,
@@ -176,24 +184,36 @@ export const verifyOtpExisting = async (otpCode: string, email: string) => {
     sessionSecrets: session.sessionSecrets,
   });
 
+  console.log(
+    "\n📥 completeAuth response:",
+    JSON.stringify(authenticatedAccount, null, 2)
+  );
   if (authenticatedAccount.success && authenticatedAccount.data) {
     //@ts-ignore
     const authenticatedSigners = authenticatedAccount.data.signers || [];
     await GridSession.findOneAndUpdate(
       { email },
       {
+        fullName: session.fullName || email,
         status: "verified",
         signers: authenticatedSigners,
         verifiedAt: new Date(),
       }
     );
 
-    const saveUser = await GridUser.create({
-      email,
-      publicKey: authenticatedAccount.data.address,
-      gridId: authenticatedAccount.data.grid_user_id,
-    });
-    console.log(saveUser);
+    const isUserExists = await GridUser.findOne({ email });
+    if(!isUserExists){
+      const saveUser = await GridUser.create({
+        email,
+        fullName: session.fullName || email,
+        publicKey: authenticatedAccount.data.address,
+        gridId: authenticatedAccount.data.grid_user_id,
+      });
+      console.log("💾 User saved:", saveUser);
+    }
+
+    
+    console.log(isUserExists);
     console.log("✅ Account verified successfully!");
     console.log(`   Signers saved: ${authenticatedSigners.length}`);
     return authenticatedAccount;
@@ -223,16 +243,44 @@ export const verifyOtp = async (otpCode: string, email: string) => {
   }
 
   try {
-    // Build user payload - DO NOT include signers for first-time auth
-    const userPayload: any = {
-      email: email,
-    };
+    let authenticatedAccount;
 
-    const authenticatedAccount = await gridClient.completeAuthAndCreateAccount({
-      user: userPayload,
-      otpCode: otpCode,
-      sessionSecrets: session.sessionSecrets,
-    });
+    // Debug logging
+    console.log(`🔍 Session status: ${session.status}`);
+    console.log(`🔍 Signers count: ${session.signers?.length || 0}`);
+    console.log(`🔍 Signers array:`, JSON.stringify(session.signers, null, 2));
+
+    // Check if this is a login (existing account) or new account creation
+    if (session.status === "pending_login") {
+      // This is an existing account login - use completeAuth
+      // Even if signers array is empty, we still use completeAuth for existing accounts
+      console.log(`🔓 Logging in existing account (${session.signers?.length || 0} signers)...`);
+      
+      const userPayload: any = {
+        email: email,
+        signers: session.signers || [], // Include signers if available (can be empty for existing accounts)
+      };
+
+      authenticatedAccount = await gridClient.completeAuth({
+        user: userPayload,
+        otpCode: otpCode,
+        sessionSecrets: session.sessionSecrets,
+      });
+    } else {
+      // This is a new account - use completeAuthAndCreateAccount without signers
+      console.log("🆕 Creating new account (status is pending_verification)...");
+      
+      const userPayload: any = {
+        email: email,
+        // DO NOT include signers for first-time auth
+      };
+
+      authenticatedAccount = await gridClient.completeAuthAndCreateAccount({
+        user: userPayload,
+        otpCode: otpCode,
+        sessionSecrets: session.sessionSecrets,
+      });
+    }
 
     console.log(
       "\n📥 completeAuth response:",
@@ -252,12 +300,20 @@ export const verifyOtp = async (otpCode: string, email: string) => {
         }
       );
 
-      const saveUser = await GridUser.create({
-        email,
-        publicKey: authenticatedAccount.data.address,
-        gridId: authenticatedAccount.data.grid_user_id,
-      });
-      console.log(saveUser);
+      // Check if user already exists to avoid duplicates
+      const existingUser = await GridUser.findOne({ email });
+      if (!existingUser) {
+        const saveUser = await GridUser.create({
+          email,
+          fullName: session.fullName || email, // Use fullName from session or fallback to email
+          publicKey: authenticatedAccount.data.address,
+          gridId: authenticatedAccount.data.grid_user_id,
+        });
+        console.log("💾 User saved:", saveUser);
+      } else {
+        console.log("ℹ️  User already exists in database");
+      }
+      
       console.log("✅ Account verified successfully!");
       console.log(`   Signers saved: ${authenticatedSigners.length}`);
       return authenticatedAccount;
