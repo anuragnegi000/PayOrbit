@@ -29,7 +29,6 @@ export async function virtualAccount(email: string): Promise<void> {
     }
   );
   console.log("✅ KYC Link Requested:", kyc);
-    // Request virtual accounts from Grid
     const resp = await gridClient.requestVirtualAccount(address, {
       grid_user_id: gridUserId,
       currency: "usd",

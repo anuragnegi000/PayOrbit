@@ -3,6 +3,7 @@ import { checkAndInitAuth, completeKYC, createVirtualAccount, gridAccountCreatio
 import bodyParser from "body-parser";
 import {connectDB} from "./db"
 import { virtualAccount } from './virtualAccount';
+import { trackPayment } from './trackPayment';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,17 @@ app.post("/createVirtualAccount",async(req:Request,res:Response)=>{
         res.status(200).send('Virtual account creation process initiated. Check logs for details.');
     }catch(error){
         console.error('Error during virtual account creation:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
+
+app.post("/trackPayment",async(req:Request,res:Response)=>{
+    try{
+        const {invoiceId,user1address,expectedAmount}=req.body;
+        await trackPayment(invoiceId,user1address,expectedAmount);
+        res.status(200).send('Payment tracking process initiated. Check logs for details.');
+    }catch(error){
+        console.error('Error during payment tracking:', error);
         res.status(500).send('Internal Server Error');
     }
 })

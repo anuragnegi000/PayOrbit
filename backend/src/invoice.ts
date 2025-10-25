@@ -1,5 +1,5 @@
 import { GridClient } from "@sqds/grid";
-import { GridUser, Invoice } from "./gridsession.db";
+import { GridUser, Invoice, VirutalAccount } from "./gridsession.db";
 import { randomUUID } from "crypto";
 
 export async function createInvoice(
@@ -20,39 +20,43 @@ export async function createInvoice(
     const gridUserId = user?.gridId;
 
     // Request virtual accounts from Grid
-    const resp = await gridClient.requestVirtualAccount(address, {
-      grid_user_id: gridUserId,
-      currency: "usd",
-    });
+    // const resp = await gridClient.requestVirtualAccount(address, {
+    //   grid_user_id: gridUserId,
+    //   currency: "usd",
+    // });
 
-    if (!resp.success || !resp.data) {
-      throw new Error("Failed to create virtual account");
-    }
+    // if (!resp.success || !resp.data) {
+    //   throw new Error("Failed to create virtual account");
+    // }
 
-    const virtualAccount = resp.data;
+    // const virtualAccount = resp.data;
 
     const invoiceId = randomUUID();
 
+    const data=await VirutalAccount.findOne({customerId:gridUserId,currency:currency});
+    if(!data){
+      throw new Error("Virtual Account not found for the user");
+    }
     const newInvoice = new Invoice({
       invoiceId: invoiceId,
-      virtualAccountId: virtualAccount.id, 
-      customerId: virtualAccount.customer_id,
+      virtualAccountId: data.id, 
+      customerId: data.customerId,
       amount: amount,
       currency: currency,
       description: description,
       customerEmail: customerEmail,
       status: "pending",
       bankDetails: {
-        bankName: virtualAccount.source_deposit_instructions.bank_name,
-        accountNumber: virtualAccount.source_deposit_instructions.bank_account_number,
-        routingNumber: virtualAccount.source_deposit_instructions.bank_routing_number,
-        beneficiaryName: virtualAccount.source_deposit_instructions.bank_beneficiary_name,
-        bankAddress: virtualAccount.source_deposit_instructions.bank_address,
+        bankName: data.sourceDepositInstructions.bankName,
+        accountNumber: data.sourceDepositInstructions.bankAccountNumber,
+        routingNumber: data.sourceDepositInstructions.bankRoutingNumber,
+        beneficiaryName: data.sourceDepositInstructions.bankBeneficiaryName,
+        bankAddress: data.sourceDepositInstructions.bankAddress,
       },
       destination: {
-        address: virtualAccount.destination.address,
-        currency: virtualAccount.destination.currency,
-        paymentRail: virtualAccount.destination.payment_rail,
+        address: data.destination.address,
+        currency: data.destination.currency,
+        paymentRail: data.destination.paymentRail,
       },
       createdAt: new Date(),
     });

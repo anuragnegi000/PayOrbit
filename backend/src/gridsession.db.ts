@@ -27,6 +27,7 @@ export interface IinvoiceSchema extends Document {
   destinationAddress:string;
   createdAt: Date;
   paidAt: Date;
+  transactionId: string;
 }
 
 export interface IGridUser{
@@ -178,6 +179,9 @@ const InvoiceSchema: Schema = new Schema<IinvoiceSchema>({
   },
   paidAt:{
     type: Date,
+  },
+  transactionId:{
+    type: String,
   }
 })
 
