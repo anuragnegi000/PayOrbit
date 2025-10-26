@@ -1,7 +1,7 @@
 import { GridClient } from "@sqds/grid";
 import { GridSession, GridUser } from "./gridsession.db";
 
-export const gridAccountCreation = async (email: string,fullName:string) => {
+export const gridAccountCreation = async (email: string, fullName: string) => {
   const gridClient = new GridClient({
     environment: "sandbox",
     apiKey: "8508a9c6-9663-4f6c-b807-d307149b4585",
@@ -10,10 +10,10 @@ export const gridAccountCreation = async (email: string,fullName:string) => {
 
   const existingSession = await GridSession.findOne({ email });
 
-  if (existingSession?.status === "verified") {
-    console.log("⚠️  Account already verified locally. Use login flow.");
-    return;
-  }
+  // if (existingSession?.status === "verified") {
+  //   console.log("⚠️  Account already verified locally. Use login flow.");
+  //   return;
+  // }
 
   // if (
   //   existingSession?.status === "pending_verification" &&
@@ -96,13 +96,15 @@ export const gridAccountCreation = async (email: string,fullName:string) => {
 
     // Save session for existing account
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    
+
     // Get existing session to preserve signers
     const existingSession = await GridSession.findOne({ email });
     const existingSigners = existingSession?.signers || [];
-    
-    console.log(`📋 Found ${existingSigners.length} signers from previous session`);
-    
+
+    console.log(
+      `📋 Found ${existingSigners.length} signers from previous session`
+    );
+
     const savedSession = await GridSession.findOneAndUpdate(
       { email },
       {
@@ -114,7 +116,6 @@ export const gridAccountCreation = async (email: string,fullName:string) => {
       },
       { upsert: true, new: true }
     );
-
 
     return {
       email,
@@ -145,7 +146,7 @@ export const checkAndInitAuth = async (email: string) => {
 
       // Save session for login
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-      await GridSession.findOneAndUpdate(
+      const data=await GridSession.findOneAndUpdate(
         { email },
         {
           sessionSecrets,
@@ -156,7 +157,7 @@ export const checkAndInitAuth = async (email: string) => {
         { upsert: true }
       );
 
-      return { exists: true, response };
+      return { exists: true, response,data };
     }
   } catch (error) {
     console.log("⚠️  Account does not exist or error occurred");
@@ -202,7 +203,7 @@ export const verifyOtpExisting = async (otpCode: string, email: string) => {
     );
 
     const isUserExists = await GridUser.findOne({ email });
-    if(!isUserExists){
+    if (!isUserExists) {
       const saveUser = await GridUser.create({
         email,
         fullName: session.fullName || email,
@@ -212,7 +213,6 @@ export const verifyOtpExisting = async (otpCode: string, email: string) => {
       console.log("💾 User saved:", saveUser);
     }
 
-    
     console.log(isUserExists);
     console.log("✅ Account verified successfully!");
     console.log(`   Signers saved: ${authenticatedSigners.length}`);
@@ -254,8 +254,12 @@ export const verifyOtp = async (otpCode: string, email: string) => {
     if (session.status === "pending_login") {
       // This is an existing account login - use completeAuth
       // Even if signers array is empty, we still use completeAuth for existing accounts
-      console.log(`🔓 Logging in existing account (${session.signers?.length || 0} signers)...`);
-      
+      console.log(
+        `🔓 Logging in existing account (${
+          session.signers?.length || 0
+        } signers)...`
+      );
+
       const userPayload: any = {
         email: email,
         signers: session.signers || [], // Include signers if available (can be empty for existing accounts)
@@ -268,8 +272,10 @@ export const verifyOtp = async (otpCode: string, email: string) => {
       });
     } else {
       // This is a new account - use completeAuthAndCreateAccount without signers
-      console.log("🆕 Creating new account (status is pending_verification)...");
-      
+      console.log(
+        "🆕 Creating new account (status is pending_verification)..."
+      );
+
       const userPayload: any = {
         email: email,
         // DO NOT include signers for first-time auth
@@ -313,7 +319,7 @@ export const verifyOtp = async (otpCode: string, email: string) => {
       } else {
         console.log("ℹ️  User already exists in database");
       }
-      
+
       console.log("✅ Account verified successfully!");
       console.log(`   Signers saved: ${authenticatedSigners.length}`);
       return authenticatedAccount;
@@ -327,9 +333,7 @@ export const verifyOtp = async (otpCode: string, email: string) => {
   }
 };
 
-export const createVirtualAccount = async (
-  email: string,
-) => {
+export const createVirtualAccount = async (email: string) => {
   const gridClient = new GridClient({
     environment: "sandbox",
     apiKey: "8508a9c6-9663-4f6c-b807-d307149b4585",
@@ -339,7 +343,7 @@ export const createVirtualAccount = async (
   if (!user) {
     throw new Error("User not found");
   }
-  gridClient.requestKycLink
+  gridClient.requestKycLink;
   const gridUserId = user.gridId;
   const address = user.publicKey;
   const virtualAccount = await gridClient.requestVirtualAccount(address, {
@@ -347,53 +351,52 @@ export const createVirtualAccount = async (
     currency: "usd",
   });
   console.log(virtualAccount);
-  return virtualAccount
+  return virtualAccount;
 };
 
-
-export const completeKYC=async(email:string)=>{
+export const completeKYC = async (email: string) => {
   const gridClient = new GridClient({
     environment: "sandbox",
     apiKey: "8508a9c6-9663-4f6c-b807-d307149b4585",
     baseUrl: "https://grid.squads.xyz",
   });
-  const user = await GridUser.findOne({ email});
-  if(!user){
+  const user = await GridUser.findOne({ email });
+  if (!user) {
     throw new Error("User not found");
   }
-  const kyc = await gridClient.requestKycLink(
-    user.publicKey, 
+  const kyc = await gridClient.requestKycLink(user.publicKey, {
+    grid_user_id: user.gridId,
+    type: "individual",
+    email: user.email,
+    full_name: user.fullName,
+    endorsements: [],
+    redirect_uri: "https://myapp.com/kyc-complete",
+  });
+  const virtualAccount = await gridClient.requestVirtualAccount(
+    user.publicKey,
     {
       grid_user_id: user.gridId,
-      type: 'individual',
-      email: user.email,
-      full_name: user.fullName,
-      endorsements: [],
-      redirect_uri: 'https://myapp.com/kyc-complete'
+      currency: "usd",
     }
   );
-  const virtualAccount = await gridClient.requestVirtualAccount(user.publicKey, {
-    grid_user_id: user.gridId,
-    currency: "usd",
-  });
-  const virtualResponse=await gridClient.getVirtualAccounts(user.publicKey);
+  const virtualResponse = await gridClient.getVirtualAccounts(user.publicKey);
   console.log(JSON.stringify(virtualResponse.data, null, 2));
   console.log(virtualAccount);
   console.log(kyc);
   return kyc;
-}
+};
 
-export const getVirtualAccounts=async(email:string)=>{
+export const getVirtualAccounts = async (email: string) => {
   const gridClient = new GridClient({
     environment: "sandbox",
     apiKey: "8508a9c6-9663-4f6c-b807-d307149b4585",
     baseUrl: "https://grid.squads.xyz",
   });
-  const user = await GridUser.findOne({ email});
-  if(!user){
+  const user = await GridUser.findOne({ email });
+  if (!user) {
     throw new Error("User not found");
   }
-  const virtualResponse=await gridClient.getVirtualAccounts(user.publicKey);
+  const virtualResponse = await gridClient.getVirtualAccounts(user.publicKey);
   console.log(JSON.stringify(virtualResponse.data, null, 2));
   return virtualResponse;
-}
+};

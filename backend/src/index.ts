@@ -2,11 +2,14 @@ import express, { Request, Response } from 'express';
 import { checkAndInitAuth, completeKYC, createVirtualAccount, gridAccountCreation, verifyOtp, verifyOtpExisting} from "./grid"
 import bodyParser from "body-parser";
 import {connectDB} from "./db"
-import { virtualAccount } from './virtualAccount';
-import { trackPayment } from './trackPayment';
+import { virtualAccount } from './controllers/virtualAccount';
+import { trackPayment } from './controllers/trackPayment';
+import cors from 'cors';
+import invoiceRouter from './routes/invoice.route';
+import { GridUser } from './gridsession.db';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 (async () => {
   await connectDB();
@@ -15,6 +18,12 @@ app.use(express.json());
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
+app.use(cors({
+    origin: ["http://localhost:3000", "http://localhost:3001"]
+}))
+
+// Mount invoice routes
+app.use('/api', invoiceRouter);
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World');
@@ -23,8 +32,8 @@ app.get('/', (req: Request, res: Response) => {
 app.post('/create-account', async (req: Request, res: Response) => {
     try {
         const {email,fullName}=req.body;
-        await gridAccountCreation(email,fullName);
-        res.status(200).send('Account creation process initiated. Check logs for details.');
+        const resp=await gridAccountCreation(email,fullName);
+        res.status(200).send(resp);
     }
     catch (error) {
         console.error('Error during account creation:', error);
@@ -35,8 +44,8 @@ app.post('/create-account', async (req: Request, res: Response) => {
 app.post("/existing-account",async(req:Request,res:Response)=>{
     try {
         const {email}=req.body  
-        await checkAndInitAuth(email);
-        res.status(200).send('Existing account verification process initiated. Check logs for details.');
+        const data=await checkAndInitAuth(email);
+        res.status(200).send(data);
     }
     catch (error) {
         console.error('Error during existing account verification:', error);
@@ -83,12 +92,37 @@ app.post("/verify-otp", async (req: Request, res: Response) => {
     try {
         console.log('Received OTP verification request');
         const { otpCode, email } = req.body;
-        await verifyOtp(otpCode,email);
-        res.status(200).send('OTP verification process initiated. Check logs for details.');
+        
+        // Verify OTP with Grid
+        const gridResponse = await verifyOtp(otpCode, email);
+        
+        // Fetch user from database
+        const user = await GridUser.findOne({ email });
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found after verification' });
+        }
+        
+        // Return response in format frontend expects
+        res.status(200).json({
+            success: true,
+            data: {
+                user: {
+                    _id: user._id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    gridUserId: user.gridId
+                },
+                gridResponse: gridResponse
+            }
+        });
     }
     catch (error) {
         console.error('Error during OTP verification:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).json({ 
+            success: false,
+            message: error instanceof Error ? error.message : 'Internal Server Error' 
+        });
     }
 })
 

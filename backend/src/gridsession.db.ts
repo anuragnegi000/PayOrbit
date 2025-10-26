@@ -11,25 +11,6 @@ export interface IGridSession extends Document {
   status: "pending_verification" | "verified" | "pending_login";
 }
 
-export interface IinvoiceSchema extends Document {
-  invoiceId: string;
-  from:string;
-  to:string;
-  amount:number;
-  currency:string;
-  status:string;
-  paymentInstructions:{
-    bankName:string;
-    routingNumber:string;
-    accountNumber:string;
-    beneficiaryName:string;
-  }
-  destinationAddress:string;
-  createdAt: Date;
-  paidAt: Date;
-  transactionId: string;
-}
-
 export interface IGridUser{
   fullName:string;
   email: string;
@@ -137,55 +118,6 @@ const VirtualAccountSchema = new Schema<IVirtualAccount>(
   }
 );
 
-const InvoiceSchema: Schema = new Schema<IinvoiceSchema>({
-  invoiceId: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  from:{
-    type: String,
-    required: true
-  },
-  to:{
-    type: String,
-    required: true
-  },
-  amount:{
-    type: Number,
-    required: true
-  },
-  currency:{
-    type: String,
-    required: true
-  },
-  status:{
-    type: String,
-    required: true
-  },
-  paymentInstructions:{
-    bankName:{type:String,required:true},
-    routingNumber:{type:String,required:true},
-    accountNumber:{type:String,required:true},
-    beneficiaryName:{type:String,required:true}
-  },
-  destinationAddress:{
-    type: String,
-    required: true
-  },
-  createdAt:{
-    type: Date,
-    default: Date.now
-  },
-  paidAt:{
-    type: Date,
-  },
-  transactionId:{
-    type: String,
-  }
-})
-
-
 // Schema definition
 const GridSessionSchema: Schema = new Schema<IGridSession>({
   email: {
@@ -252,11 +184,6 @@ export const GridUser = mongoose.model<IGridUser>(
 export const GridSession = mongoose.model<IGridSession>(
   "GridSession",
   GridSessionSchema
-);
-
-export const Invoice = mongoose.model<IinvoiceSchema>(
-  "Invoice",
-  InvoiceSchema
 );
 
 export const VirutalAccount=mongoose.model<IVirtualAccount>(

@@ -1,5 +1,6 @@
 import { GridClient } from "@sqds/grid";
-import { GridUser, Invoice, VirutalAccount } from "./gridsession.db";
+import { GridUser, VirutalAccount } from "../gridsession.db";
+import { Invoice } from "../models/Invoice";
 import { randomUUID } from "crypto";
 
 export async function createInvoice(
