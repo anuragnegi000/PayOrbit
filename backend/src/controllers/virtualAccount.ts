@@ -2,8 +2,10 @@ import { GridClient } from "@sqds/grid";
 import { GridUser, VirutalAccount } from "../gridsession.db";
 import { Invoice } from "../models/Invoice";
 import { randomUUID } from "crypto";
+import { Request, Response } from "express";
 
-export async function virtualAccount(email: string): Promise<void> {
+export async function virtualAccount(req:Request,res:Response): Promise<void> {
+  const { email } = req.body;
   try {
     const gridClient = new GridClient({
       environment: "sandbox",
@@ -62,6 +64,12 @@ export async function virtualAccount(email: string): Promise<void> {
       },
       status: virtualAccount.status,
       developerFeePercent: virtualAccount.developer_fee_percent,
+    });
+
+    res.status(201).json({
+      message: "Virtual Account Created Successfully",
+      virtualAccount: saveVirtualAccount,
+      kycLink: kyc.data?.kyc_link || null,
     });
 
     console.log("✅ Virtual Account Created:", virtualAccount);
