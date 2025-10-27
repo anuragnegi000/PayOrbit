@@ -6,6 +6,8 @@ import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { invoiceAPI } from "@/lib/api"
+import { sendInvoiceEmail } from "@/lib/email/sendInvoiceEmail"
+import { getQRDataUrl } from "@/lib/utils/downloadQR"
 import { DashboardLayout } from "@/components/layouts/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +15,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Loader2, ArrowLeft } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { QRCodeDisplay } from "@/components/ui/QRCodeDisplay"
+import { Plus, Trash2, Loader2, ArrowLeft, Copy, Mail, CheckCircle } from "lucide-react"
+import { copyToClipboard, formatCurrency } from "@/lib/utils"
+import { toast } from "sonner"
 
 const invoiceSchema = z.object({
   amount: z.number().positive("Amount must be greater than 0"),
@@ -36,7 +42,10 @@ type InvoiceFormData = z.infer<typeof invoiceSchema>
 export default function CreateInvoicePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [error, setError] = useState("")
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [createdInvoice, setCreatedInvoice] = useState<any>(null)
 
   const {
     register,
@@ -69,12 +78,65 @@ export default function CreateInvoicePage() {
       setIsLoading(true)
       setError("")
       const response = await invoiceAPI.create(data)
-      router.push(`/dashboard/invoice/${response.data._id}`)
+      
+      // Create payment link
+      const paymentLink = `${window.location.origin}/pay/${response.data._id}`
+      const invoiceWithLink = { ...response.data, paymentLink }
+      
+      setCreatedInvoice(invoiceWithLink)
+      setShowSuccessDialog(true)
+      toast.success("Invoice created successfully!")
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create invoice")
+      toast.error("Failed to create invoice")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleCopyLink = () => {
+    if (createdInvoice?.paymentLink) {
+      copyToClipboard(createdInvoice.paymentLink)
+      toast.success("Payment link copied to clipboard!")
+    }
+  }
+
+  const handleSendEmail = async () => {
+    if (!createdInvoice || !createdInvoice.payerEmail) {
+      toast.error("No payer email provided")
+      return
+    }
+
+    try {
+      setIsSendingEmail(true)
+      
+      // Get QR code as data URL
+      const qrDataUrl = await getQRDataUrl("qr-code-display")
+      
+      // Send email with invoice details
+      await sendInvoiceEmail({
+        email: createdInvoice.payerEmail,
+        invoiceId: createdInvoice._id,
+        paymentLink: createdInvoice.paymentLink,
+        qrDataUrl,
+        amount: createdInvoice.amount,
+        currency: createdInvoice.currency,
+        dueDate: createdInvoice.dueDate,
+        payerName: createdInvoice.payerName,
+      })
+      
+      toast.success(`Invoice sent to ${createdInvoice.payerEmail}`)
+    } catch (error) {
+      console.error("Error sending email:", error)
+      toast.error("Failed to send email")
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setShowSuccessDialog(false)
+    router.push("/dashboard")
   }
 
   return (
@@ -292,6 +354,99 @@ export default function CreateInvoicePage() {
             </Button>
           </div>
         </form>
+
+        {/* Success Dialog with QR Code */}
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                <DialogTitle>Invoice Created Successfully!</DialogTitle>
+              </div>
+              <DialogDescription>
+                Your invoice has been created and is ready to share with the customer.
+              </DialogDescription>
+            </DialogHeader>
+
+            {createdInvoice && (
+              <div className="space-y-6 py-4">
+                {/* Invoice Details */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Invoice ID:</span>
+                    <span className="font-medium text-gray-900">{createdInvoice._id}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Amount:</span>
+                    <span className="font-medium text-gray-900">
+                      {formatCurrency(createdInvoice.amount, createdInvoice.currency)}
+                    </span>
+                  </div>
+                  {createdInvoice.payerEmail && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Customer:</span>
+                      <span className="font-medium text-gray-900">{createdInvoice.payerEmail}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Link */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-600">Payment Link</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={createdInvoice.paymentLink}
+                      readOnly
+                      className="flex-1 text-sm"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* QR Code */}
+                <div className="flex flex-col items-center py-4">
+                  <QRCodeDisplay
+                    value={createdInvoice.paymentLink}
+                    label="Scan to Pay"
+                    downloadFileName={`invoice_${createdInvoice._id}_qr.png`}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  {createdInvoice.payerEmail && (
+                    <Button
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail}
+                      className="flex-1"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Email
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseDialog}
+                    className="flex-1"
+                  >
+                    Done
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   )

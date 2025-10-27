@@ -1,181 +1,231 @@
 @workspace
-You are building a full-featured **Invoice Creator and Payment System frontend** in **Next.js (App Router)** using **TypeScript**, **Tailwind**, and **shadcn/ui** components.
+Enhance the Invoice Creation flow with **automatic QR code generation** and **email sharing** for payment links.
 
-Please create the full folder structure, pages, and components based on the flow described below.  
-Use modern, clean, light-theme UI and shadcn components everywhere.
+🧠 Goal:
+When a merchant creates a new invoice, the system should:
+1. Automatically generate a **QR code** for the invoice payment link.
+2. Display the QR code in the success dialog.
+3. Allow downloading the QR code as an image.
+4. Automatically **send the invoice details and QR code via email** to the customer.
 
 ---
 
-## 🧩 Stack & Design
-- Next.js 14+ (App Router)
+## 🧱 Tech Requirements
+- Next.js (App Router)
 - TypeScript
-- Tailwind CSS (light mode)
+- Tailwind CSS (light theme)
 - shadcn/ui components
-- lucide-react icons
-- React Hook Form + Zod for validation
-- Zustand or React Query for state management
-- Framer Motion for animations
-- Axios for API calls
-- Use clean, light UI (white background, light gray borders, soft shadows)
-- Rounded-2xl corners, shadow-sm, consistent padding (p-4, p-6)
-- Typography: text-gray-800, headings font-semibold
+- `react-qr-code` for QR generation
+- `react-hook-form` + `zod` for validation
+- `axios` for API calls
+- `framer-motion` for animation
+- Email sending handled via a mock API (`/api/sendInvoiceEmail`) for now
+- Clean, light UI with soft borders, rounded-2xl corners, and padding
 
 ---
 
-## 🔐 Authentication (Merchant + Payer)
-**Files to create:**
-- `/app/login/page.tsx`
-- `/app/verify-otp/page.tsx`
-- `/lib/hooks/useAuth.ts`
-- `/components/auth/LoginForm.tsx`
-- `/components/auth/OTPDialog.tsx`
+## 📦 Dependencies to Install
+Add these in setup:
+```bash
+npm install react-qr-code axios
+⚙️ Files to Create / Modify
+1️⃣ /components/ui/QRCodeDisplay.tsx
+Reusable component that renders a QR code and supports image download.
 
-**Flow:**
-- Email input + “Send OTP” → triggers fake/mocked API call
-- OTP Dialog → verify and redirect to dashboard
-- Store session in Zustand or localStorage
-- Use shadcn `Card`, `Input`, `Button`, and `Dialog`
+Requirements:
 
----
+Props:
 
-## 🧾 Merchant Dashboard
-**Files to create:**
-- `/app/dashboard/page.tsx`
-- `/components/dashboard/InvoiceTable.tsx`
-- `/components/dashboard/InvoiceCard.tsx`
-- `/components/ui/StatusBadge.tsx`
-- `/lib/hooks/useInvoices.ts`
+value: string (QR code URL)
 
-**Features:**
-- Top bar: logo, “Create Invoice” button, profile dropdown
-- Filter tabs: “All”, “Pending”, “Paid”, “Overdue”
-- Search bar for invoice ID / customer email
-- Invoice table with columns:
-  - Invoice ID
-  - Customer Email
-  - Amount
-  - Status (Badge)
-  - Due Date
-  - “View” button
-- On mobile → display as stacked cards
-- Empty state view using `Card` and `Alert`
+label?: string
 
----
+Uses react-qr-code
 
-## ➕ Create Invoice
-**Files to create:**
-- `/app/create-invoice/page.tsx`
-- `/components/invoices/CreateInvoiceForm.tsx`
+Contains:
 
-**Form fields:**
-- Customer Email
-- Amount
-- Description
-- Due Date
-- “Generate Payment Link” button
+Centered QR code
 
-**After submission:**
-- Mock API call returns Invoice ID + payment link
-- Display success `Dialog` with:
-  - Invoice ID
-  - Shareable Link (copy button)
-  - “Send via Email” option
+“Download QR” button (saves QR as PNG)
 
-Use shadcn `Dialog`, `Toast`, and `CopyButton`.
+Optional label text under the QR
 
----
+Use Card, Button, and Separator from shadcn
 
-## 📡 Track Invoice Status
-**Files to create:**
-- `/app/invoice/[id]/page.tsx`
-- `/components/invoices/InvoiceStatus.tsx`
+Use canvas export technique:
 
-**Display:**
-- Invoice details (ID, amount, email, due date)
-- Status badge (awaiting_funds, payment_processed, etc.)
-- Progress indicator or status stepper
-- Polling (mock) for real-time updates
+tsx
+Copy code
+import QRCode from "react-qr-code";
+import { toPng } from "html-to-image";
+Add Framer Motion fade-in animation
 
----
+2️⃣ /lib/utils/downloadQR.ts
+Helper to export a QR code component as an image.
 
-## 💰 Payment Flow (Payer)
-**Files to create:**
-- `/app/pay/[invoiceId]/page.tsx`
-- `/app/pay/[invoiceId]/receipt/page.tsx`
-- `/components/pay/PaymentDetails.tsx`
-- `/components/pay/PaymentButton.tsx`
+Example:
 
-**Steps:**
-1. Customer lands on payment link `/pay/[invoiceId]`
-2. Show merchant + invoice info
-3. Authenticate via email + OTP if first time (reuse same auth components)
-4. “Confirm and Pay” → simulate Grid SDK (mock delay 5–10s)
-5. Show “Processing payment...” spinner
-6. Redirect to `/pay/[invoiceId]/receipt` with:
-   - Amount
-   - Merchant
-   - Transfer ID
-   - Download / Print button
+ts
+Copy code
+export async function downloadQR(elementId: string, filename: string = "invoice_qr.png") {
+  const node = document.getElementById(elementId);
+  if (!node) return;
+  const dataUrl = await toPng(node);
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
+}
+3️⃣ /app/api/sendInvoiceEmail/route.ts
+Mock backend route to simulate sending email with QR attachment.
 
-Use `Card`, `Alert`, and `Loader` components with Framer Motion transitions.
+Functionality:
 
----
+Accepts JSON body: { email, invoiceId, paymentLink, qrDataUrl }
 
-## 🧾 Receipt Page
-**Files to create:**
-- `/app/pay/[invoiceId]/receipt/page.tsx`
-- Display payment confirmation
-- Grid Transfer ID
-- Transaction signature
-- “Download PDF” and “Back to Home” buttons
+Simulates email sending using console.log() or setTimeout
 
----
+Returns success JSON { success: true }
 
-## ⚙️ Global Utilities
-Create these files for organization:
-- `/lib/api.ts` → Axios instance
-- `/components/ui/Loader.tsx`
-- `/components/layouts/DashboardLayout.tsx`
-- `/components/layouts/AuthLayout.tsx`
-- `/components/ui/EmptyState.tsx`
-- `/components/ui/ToastProvider.tsx`
+Use this later with a real email provider (SendGrid, Resend, Mailgun, etc.)
 
----
+4️⃣ /components/invoices/CreateInvoiceForm.tsx
+Modify the existing invoice creation form to include:
 
-## 🧭 File Structure Summary
+QR generation step once invoice is created
 
-app/
-├── login/page.tsx
-├── verify-otp/page.tsx
-├── dashboard/page.tsx
-├── create-invoice/page.tsx
-├── invoice/[id]/page.tsx
-├── pay/[invoiceId]/page.tsx
-├── pay/[invoiceId]/receipt/page.tsx
+QR displayed in success dialog
+
+“Send Email” button that calls /api/sendInvoiceEmail
+
+Display success toast after sending
+
+Dialog layout:
+
+rust
+Copy code
+✅ Invoice Created Successfully!
+
+Invoice ID: INV-123
+Payment Link: https://myapp.com/pay/INV-123
+
+[ Scan to Pay ]
+<QRCodeDisplay value={paymentLink} label="Scan to Pay" />
+
+[ Copy Link ] [ Download QR ] [ Send Email ]
+Flow:
+
+Merchant fills out invoice form.
+
+On submit → POST to backend to create invoice.
+
+When success response received:
+
+Generate payment link.
+
+Display Dialog with invoice details and QR code.
+
+Auto-call generateQRCode() to display it.
+
+When merchant clicks “Send Email”:
+
+Convert QR to base64 using toPng()
+
+POST to /api/sendInvoiceEmail
+
+Show toast on success.
+
+Use shadcn components:
+
+Dialog, Button, Separator, Card, Toast
+
+Icons: Mail, Copy, Download, CheckCircle
+
+5️⃣ /lib/email/sendInvoiceEmail.ts
+Client-side utility that calls the API endpoint.
+
+ts
+Copy code
+import axios from "axios";
+
+export async function sendInvoiceEmail({
+  email,
+  invoiceId,
+  paymentLink,
+  qrDataUrl,
+}: {
+  email: string;
+  invoiceId: string;
+  paymentLink: string;
+  qrDataUrl: string;
+}) {
+  const res = await axios.post("/api/sendInvoiceEmail", {
+    email,
+    invoiceId,
+    paymentLink,
+    qrDataUrl,
+  });
+  return res.data;
+}
+6️⃣ (Optional) /components/ui/EmailSentToast.tsx
+Small toast component that shows “Email sent successfully to [customer email]”.
+
+💅 UI/UX Requirements
+Light color palette (white, gray-100, gray-300 borders)
+
+Center QR in modal, responsive layout
+
+Use subtle animations (fade/scale)
+
+Dialog should auto-adjust width (max-w-lg)
+
+Add “Copy link” button with toast feedback
+
+Display a green badge or icon when email sent
+
+📁 Updated Structure Summary
+vbnet
+Copy code
 components/
-├── auth/
-├── dashboard/
-├── invoices/
-├── pay/
-├── layouts/
-└── ui/
+ ├── invoices/
+ │     └── CreateInvoiceForm.tsx
+ └── ui/
+       ├── QRCodeDisplay.tsx
+       ├── EmailSentToast.tsx (optional)
 lib/
-├── api.ts
-├── hooks/
-├── useAuth.ts
-└── useInvoices.ts
+ ├── utils/
+ │     └── downloadQR.ts
+ ├── email/
+ │     └── sendInvoiceEmail.ts
+app/
+ ├── api/
+ │     └── sendInvoiceEmail/
+ │           └── route.ts
+✅ Expected Result
+Merchant creates invoice.
+
+Success dialog shows:
+
+Invoice details
+
+Payment link
+
+QR code
+
+Buttons:
+
+Copy link → copies to clipboard
+
+Download QR → saves QR as image
+
+Send Email → calls /api/sendInvoiceEmail
+
+Email successfully “sent” (mock backend) with QR attachment.
+
+UI gives feedback via toast.
+
+Now generate the entire QR code + email feature end to end across the files listed above.
+Make sure it’s visually consistent with the rest of the app (light theme, shadcn components, rounded cards, clear UX).
 
 yaml
 Copy code
-
----
-
-## ✨ Final Requirements
-- Use only **light mode**
-- Every page should be styled and responsive
-- Use mock API responses for now
-- Integrate consistent `Toast` notifications for success/error
-- Animate page transitions with Framer Motion
-- Keep UI minimal, elegant, and aligned with shadcn style
-
-Now, generate the full Next.js frontend project file by file using the above structure and UI components.
