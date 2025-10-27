@@ -7,9 +7,29 @@ const router = Router();
 // Get all invoices for a merchant
 router.get('/invoices', async (req: Request, res: Response) => {
   try {
-    // In a real app, you'd get merchantId from authenticated user token
-    // For now, we'll get all invoices
-    const invoices = await Invoice.find().sort({ createdAt: -1 });
+    const { merchantEmail } = req.query;
+    
+    console.log('📊 GET /api/invoices - Request received');
+    console.log('  merchantEmail:', merchantEmail);
+    
+    if (!merchantEmail) {
+      console.log('❌ No merchantEmail provided');
+      return res.status(400).json({ message: 'merchantEmail query parameter is required' });
+    }
+
+    // Find merchant by email
+    const merchant = await GridUser.findOne({ email: merchantEmail });
+    console.log('👤 Merchant lookup:', merchant ? `Found: ${merchant.email}` : 'Not found');
+    
+    if (!merchant) {
+      return res.status(404).json({ message: 'Merchant not found' });
+    }
+
+    // Get invoices for this merchant only
+    const invoices = await Invoice.find({ merchant: merchant._id }).sort({ createdAt: -1 });
+    console.log('📋 Found', invoices.length, 'invoices for merchant:', merchant.email);
+    console.log('  Merchant ID:', merchant._id);
+    
     res.status(200).json(invoices);
   } catch (error) {
     console.error('Error fetching invoices:', error);
@@ -48,29 +68,30 @@ router.post('/invoices/create', async (req: Request, res: Response) => {
       merchantEmail, // We'll use this to find the merchant
     } = req.body;
 
+    console.log('📝 POST /api/invoices/create - Request received');
+    console.log('  merchantEmail:', merchantEmail);
+    console.log('  amount:', amount, currency);
+
     // Validate required fields
     if (!amount || !dueDate) {
       return res.status(400).json({ message: 'Amount and due date are required' });
     }
 
-    // Find merchant by email (in a real app, use authenticated user)
-    // For now, we'll use the first GridUser or create a dummy merchant ID
-    let merchantId;
-    
-    if (merchantEmail) {
-      const merchant = await GridUser.findOne({ email: merchantEmail });
-      if (merchant) {
-        merchantId = merchant._id;
-      }
+    // Validate merchantEmail is provided
+    if (!merchantEmail) {
+      console.log('❌ No merchantEmail provided in request body');
+      return res.status(400).json({ message: 'merchantEmail is required' });
     }
+
+    // Find merchant by email
+    const merchant = await GridUser.findOne({ email: merchantEmail });
+    console.log('👤 Merchant lookup for invoice creation:', merchant ? `Found: ${merchant.email}` : 'Not found');
     
-    // If no merchant found, we'll still create the invoice with a placeholder
-    // In production, this should come from authenticated user
-    if (!merchantId) {
-      // Get the first user or use a default
-      const firstUser = await GridUser.findOne();
-      merchantId = firstUser?._id;
+    if (!merchant) {
+      return res.status(404).json({ message: 'Merchant not found. Please ensure you are logged in.' });
     }
+
+    const merchantId = merchant._id;
 
     // Create invoice
     const invoice = new Invoice({
@@ -87,6 +108,10 @@ router.post('/invoices/create', async (req: Request, res: Response) => {
     });
 
     await invoice.save();
+    
+    console.log('✅ Invoice created successfully');
+    console.log('  Invoice ID:', invoice._id);
+    console.log('  Merchant ID:', merchantId);
 
     res.status(201).json(invoice);
   } catch (error) {

@@ -1,18 +1,27 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/lib/store/authStore"
-import { Loader } from "@/components/ui/loader"
+import Navbar from "@/components/landing/Navbar"
+import HeroSection from "@/components/landing/HeroSection"
+import FeaturesSection from "@/components/landing/FeaturesSection"
+import HowItWorks from "@/components/landing/HowItWorks"
+import TestimonialsSection from "@/components/landing/TestimonialsSection"
+import CTASection from "@/components/landing/CTASection"
+import Footer from "@/components/landing/Footer"
 
 export default function Home() {
-  const router = useRouter()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Loader text="Loading..." />
+    <div className="min-h-screen bg-white text-gray-900">
+      <Navbar />
+
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorks />
+        <TestimonialsSection />
+        <CTASection />
+      </main>
+
+      <Footer />
     </div>
   )
 }

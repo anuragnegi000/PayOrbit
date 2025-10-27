@@ -1,231 +1,163 @@
 @workspace
-Enhance the Invoice Creation flow with **automatic QR code generation** and **email sharing** for payment links.
+Create a complete **Landing Page for PayOrbit**, designed to match the existing Invoice Creator and Payment system built previously.
 
-🧠 Goal:
-When a merchant creates a new invoice, the system should:
-1. Automatically generate a **QR code** for the invoice payment link.
-2. Display the QR code in the success dialog.
-3. Allow downloading the QR code as an image.
-4. Automatically **send the invoice details and QR code via email** to the customer.
+🧭 Goal:
+Build a responsive, high-converting landing page that showcases PayOrbit’s features (invoice creation, QR payments, real-time tracking, etc.) using **Next.js (App Router)**, **TypeScript**, **Tailwind**, and **shadcn/ui components**.
+
+The landing page should be elegant, minimal, and light-themed, consistent with the app’s design.
 
 ---
 
-## 🧱 Tech Requirements
-- Next.js (App Router)
+## 🧱 Tech Stack
+- Next.js 14+ (App Router)
 - TypeScript
-- Tailwind CSS (light theme)
-- shadcn/ui components
-- `react-qr-code` for QR generation
-- `react-hook-form` + `zod` for validation
-- `axios` for API calls
-- `framer-motion` for animation
-- Email sending handled via a mock API (`/api/sendInvoiceEmail`) for now
-- Clean, light UI with soft borders, rounded-2xl corners, and padding
+- Tailwind CSS (light mode)
+- shadcn/ui for all components
+- framer-motion for animations
+- lucide-react for icons
+- Responsive layout (desktop / mobile)
+- Smooth scroll navigation
 
 ---
 
-## 📦 Dependencies to Install
-Add these in setup:
-```bash
-npm install react-qr-code axios
-⚙️ Files to Create / Modify
-1️⃣ /components/ui/QRCodeDisplay.tsx
-Reusable component that renders a QR code and supports image download.
+## 📄 Pages to Generate
+- `/app/page.tsx` → main landing page
+- `/components/landing/` → folder for modular UI sections:
+  - `Navbar.tsx`
+  - `HeroSection.tsx`
+  - `FeaturesSection.tsx`
+  - `HowItWorks.tsx`
+  - `TestimonialsSection.tsx`
+  - `CTASection.tsx`
+  - `Footer.tsx`
 
-Requirements:
+---
 
-Props:
+## 🎨 Design System
+- Light background (#ffffff), subtle gray text (#1f2937)
+- Primary color: light blue (`#2563eb`)
+- Accent color: emerald green for highlights
+- Use rounded-2xl cards, soft shadows
+- Animations: fade-in, slide-up via Framer Motion
+- Typography: large headlines, balanced white space
+- Use `Card`, `Button`, `Badge`, `Input`, `Separator`, `Avatar`, `Tabs` from shadcn/ui
 
-value: string (QR code URL)
+---
 
-label?: string
+## 🧭 Layout Overview
 
-Uses react-qr-code
+### 🧩 Navbar
+**File:** `/components/landing/Navbar.tsx`
+- Logo (PayOrbit)
+- Menu items: “Features”, “How It Works”, “Pricing”, “Contact”
+- “Login” and “Get Started” buttons (link to `/login` and `/dashboard`)
+- Sticky top, white background, shadow-sm
 
-Contains:
+---
 
-Centered QR code
+### 💫 Hero Section
+**File:** `/components/landing/HeroSection.tsx`
+- Large headline: “Simplify Payments. Empower Your Business.”
+- Subtext: “PayOrbit helps you create invoices, share QR codes, and accept payments instantly — all in one secure platform.”
+- Primary CTA: “Get Started for Free”
+- Secondary CTA: “View Demo”
+- Include illustration or mock screenshot of the dashboard (use placeholder image)
+- Animated fade-in with Framer Motion
 
-“Download QR” button (saves QR as PNG)
+---
 
-Optional label text under the QR
+### ⚙️ Features Section
+**File:** `/components/landing/FeaturesSection.tsx`
+- 3-4 feature cards in a responsive grid:
+  1. “Create Invoices Instantly” – icon: FilePlus
+  2. “Share Secure Payment Links” – icon: Link
+  3. “QR Code Payments” – icon: QrCode
+  4. “Track Real-Time Payments” – icon: Activity
+- Each card uses a shadcn `Card` with icon, title, and description.
+- Animate on scroll (fade-up).
 
-Use Card, Button, and Separator from shadcn
+---
 
-Use canvas export technique:
+### 🔁 How It Works
+**File:** `/components/landing/HowItWorks.tsx`
+A step-by-step visual guide using icons and numbered cards:
+1. **Login / Signup**
+2. **Create Invoice**
+3. **Share Link / QR**
+4. **Get Paid**
+- Use horizontal steps layout on desktop, stacked on mobile.
+- Each step has icon + short description.
 
-tsx
-Copy code
-import QRCode from "react-qr-code";
-import { toPng } from "html-to-image";
-Add Framer Motion fade-in animation
+---
 
-2️⃣ /lib/utils/downloadQR.ts
-Helper to export a QR code component as an image.
+### 💬 Testimonials Section
+**File:** `/components/landing/TestimonialsSection.tsx`
+- 2–3 testimonials inside shadcn `Card` components
+- Include avatar, name, role, feedback
+- Subtle Framer Motion animation
+- Example: “PayOrbit simplified our payment workflow by 70%!”
 
-Example:
+---
 
-ts
-Copy code
-export async function downloadQR(elementId: string, filename: string = "invoice_qr.png") {
-  const node = document.getElementById(elementId);
-  if (!node) return;
-  const dataUrl = await toPng(node);
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = dataUrl;
-  link.click();
-}
-3️⃣ /app/api/sendInvoiceEmail/route.ts
-Mock backend route to simulate sending email with QR attachment.
+### 🚀 CTA Section
+**File:** `/components/landing/CTASection.tsx`
+- Bold headline: “Start accepting payments in minutes.”
+- Button: “Get Started Free”
+- Secondary text: “No credit card required.”
+- Full-width light blue background, centered content.
 
-Functionality:
+---
 
-Accepts JSON body: { email, invoiceId, paymentLink, qrDataUrl }
+### 🧩 Footer
+**File:** `/components/landing/Footer.tsx`
+- Logo + short tagline
+- Links: About • Terms • Privacy • Contact
+- Social icons (lucide-react)
+- Copyright text
 
-Simulates email sending using console.log() or setTimeout
+---
 
-Returns success JSON { success: true }
-
-Use this later with a real email provider (SendGrid, Resend, Mailgun, etc.)
-
-4️⃣ /components/invoices/CreateInvoiceForm.tsx
-Modify the existing invoice creation form to include:
-
-QR generation step once invoice is created
-
-QR displayed in success dialog
-
-“Send Email” button that calls /api/sendInvoiceEmail
-
-Display success toast after sending
-
-Dialog layout:
-
-rust
-Copy code
-✅ Invoice Created Successfully!
-
-Invoice ID: INV-123
-Payment Link: https://myapp.com/pay/INV-123
-
-[ Scan to Pay ]
-<QRCodeDisplay value={paymentLink} label="Scan to Pay" />
-
-[ Copy Link ] [ Download QR ] [ Send Email ]
-Flow:
-
-Merchant fills out invoice form.
-
-On submit → POST to backend to create invoice.
-
-When success response received:
-
-Generate payment link.
-
-Display Dialog with invoice details and QR code.
-
-Auto-call generateQRCode() to display it.
-
-When merchant clicks “Send Email”:
-
-Convert QR to base64 using toPng()
-
-POST to /api/sendInvoiceEmail
-
-Show toast on success.
-
-Use shadcn components:
-
-Dialog, Button, Separator, Card, Toast
-
-Icons: Mail, Copy, Download, CheckCircle
-
-5️⃣ /lib/email/sendInvoiceEmail.ts
-Client-side utility that calls the API endpoint.
-
-ts
-Copy code
-import axios from "axios";
-
-export async function sendInvoiceEmail({
-  email,
-  invoiceId,
-  paymentLink,
-  qrDataUrl,
-}: {
-  email: string;
-  invoiceId: string;
-  paymentLink: string;
-  qrDataUrl: string;
-}) {
-  const res = await axios.post("/api/sendInvoiceEmail", {
-    email,
-    invoiceId,
-    paymentLink,
-    qrDataUrl,
-  });
-  return res.data;
-}
-6️⃣ (Optional) /components/ui/EmailSentToast.tsx
-Small toast component that shows “Email sent successfully to [customer email]”.
-
-💅 UI/UX Requirements
-Light color palette (white, gray-100, gray-300 borders)
-
-Center QR in modal, responsive layout
-
-Use subtle animations (fade/scale)
-
-Dialog should auto-adjust width (max-w-lg)
-
-Add “Copy link” button with toast feedback
-
-Display a green badge or icon when email sent
-
-📁 Updated Structure Summary
-vbnet
-Copy code
-components/
- ├── invoices/
- │     └── CreateInvoiceForm.tsx
- └── ui/
-       ├── QRCodeDisplay.tsx
-       ├── EmailSentToast.tsx (optional)
-lib/
- ├── utils/
- │     └── downloadQR.ts
- ├── email/
- │     └── sendInvoiceEmail.ts
+## 📁 File Structure Summary
 app/
- ├── api/
- │     └── sendInvoiceEmail/
- │           └── route.ts
-✅ Expected Result
-Merchant creates invoice.
-
-Success dialog shows:
-
-Invoice details
-
-Payment link
-
-QR code
-
-Buttons:
-
-Copy link → copies to clipboard
-
-Download QR → saves QR as image
-
-Send Email → calls /api/sendInvoiceEmail
-
-Email successfully “sent” (mock backend) with QR attachment.
-
-UI gives feedback via toast.
-
-Now generate the entire QR code + email feature end to end across the files listed above.
-Make sure it’s visually consistent with the rest of the app (light theme, shadcn components, rounded cards, clear UX).
+├── page.tsx
+components/
+└── landing/
+├── Navbar.tsx
+├── HeroSection.tsx
+├── FeaturesSection.tsx
+├── HowItWorks.tsx
+├── TestimonialsSection.tsx
+├── CTASection.tsx
+└── Footer.tsx
 
 yaml
 Copy code
+
+---
+
+## ✨ Functionality & Animation
+- Add scroll-based fade-in animations using Framer Motion.
+- Smooth scroll navigation between sections.
+- CTA buttons link to `/login` or `/dashboard`.
+- All sections responsive (stacked on mobile).
+
+---
+
+## 💅 Styling
+- Keep background white (`bg-white`)
+- Section padding: `py-20 px-6 md:px-16`
+- Headings use `text-4xl font-bold text-gray-900`
+- Subheadings `text-gray-600`
+- Buttons use shadcn variants: `variant="default"` for blue, `variant="outline"` for white
+
+---
+
+## ✅ Expected Deliverable
+Generate:
+1. Full landing page UI using above components.
+2. Animated, responsive design.
+3. End-to-end structure ready to plug into the existing Next.js app.
+4. Uses only shadcn/ui + Tailwind + Framer Motion.
+5. Light theme only.
+
+Generate all files listed above with production-ready code and clean structure.
