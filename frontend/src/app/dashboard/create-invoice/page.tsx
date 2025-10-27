@@ -20,6 +20,7 @@ import { QRCodeDisplay } from "@/components/ui/QRCodeDisplay"
 import { Plus, Trash2, Loader2, ArrowLeft, Copy, Mail, CheckCircle } from "lucide-react"
 import { copyToClipboard, formatCurrency } from "@/lib/utils"
 import { toast } from "sonner"
+import { useAuthStore } from "@/lib/store/authStore"
 
 const invoiceSchema = z.object({
   amount: z.number().positive("Amount must be greater than 0"),
@@ -41,6 +42,7 @@ type InvoiceFormData = z.infer<typeof invoiceSchema>
 
 export default function CreateInvoicePage() {
   const router = useRouter()
+  const { user } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [error, setError] = useState("")
@@ -74,10 +76,19 @@ export default function CreateInvoicePage() {
   )
 
   const onSubmit = async (data: InvoiceFormData) => {
+    if (!user?.email) {
+      toast.error("Please login to create invoices")
+      router.push("/login")
+      return
+    }
+
     try {
       setIsLoading(true)
       setError("")
-      const response = await invoiceAPI.create(data)
+      const response = await invoiceAPI.create({
+        ...data,
+        merchantEmail: user.email,
+      })
       
       // Create payment link
       const paymentLink = `${window.location.origin}/pay/${response.data._id}`
@@ -88,7 +99,7 @@ export default function CreateInvoicePage() {
       toast.success("Invoice created successfully!")
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create invoice")
-      toast.error("Failed to create invoice")
+      toast.error(err.response?.data?.message || "Failed to create invoice")
     } finally {
       setIsLoading(false)
     }

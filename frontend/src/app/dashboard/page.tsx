@@ -21,9 +21,12 @@ import { EmptyState } from "@/components/empty-state"
 import { Loader } from "@/components/ui/loader"
 import { Plus, Search, FileText, Copy } from "lucide-react"
 import { formatCurrency, formatDate, copyToClipboard } from "@/lib/utils"
+import { useAuthStore } from "@/lib/store/authStore"
+import { toast } from "sonner"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { user, isAuthenticated, _hasHydrated } = useAuthStore()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -31,20 +34,31 @@ export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState<InvoiceStatus | "all">("all")
 
   useEffect(() => {
+    // Don't check auth until Zustand has hydrated from localStorage
+    if (!_hasHydrated) return
+    
+    if (!user?.email || !isAuthenticated) {
+      toast.error("Please login to view invoices")
+      router.push("/login")
+      return
+    }
     fetchInvoices()
-  }, [])
+  }, [user, isAuthenticated, _hasHydrated])
 
   useEffect(() => {
     filterInvoices()
   }, [searchQuery, activeFilter, invoices])
 
   const fetchInvoices = async () => {
+    if (!user?.email) return
+    
     try {
       setIsLoading(true)
-      const response = await invoiceAPI.getAll()
+      const response = await invoiceAPI.getAll(user.email)
       setInvoices(response.data)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch invoices:", error)
+      toast.error(error.response?.data?.message || "Failed to fetch invoices")
     } finally {
       setIsLoading(false)
     }

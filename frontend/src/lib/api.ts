@@ -35,7 +35,6 @@ api.interceptors.response.use(
 
 export default api;
 
-// API Functions
 export const authAPI = {
   login: (email: string, fullName: string) => 
     api.post('/create-account', { email, fullName }),
@@ -51,7 +50,7 @@ export const authAPI = {
 };
 
 export const invoiceAPI = {
-  getAll: () => api.get('/api/invoices'),
+  getAll: (merchantEmail: string) => api.get(`/api/invoices?merchantEmail=${encodeURIComponent(merchantEmail)}`),
   
   getById: (id: string) => api.get(`/api/invoices/${id}`),
   
@@ -62,6 +61,7 @@ export const invoiceAPI = {
     payerEmail?: string;
     payerName?: string;
     description?: string;
+    merchantEmail: string;
     items?: Array<{
       description: string;
       quantity: number;

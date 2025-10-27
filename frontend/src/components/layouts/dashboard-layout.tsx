@@ -9,11 +9,25 @@ import Link from "next/link"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { user, isAuthenticated, logout } = useAuthStore()
+  const { user, isAuthenticated, _hasHydrated, logout } = useAuthStore()
 
   useEffect(() => {
-    // router.push("/dashboard")
-  }, [isAuthenticated, router])
+    // Wait for hydration before checking auth
+    if (!_hasHydrated) return
+    
+    if (!isAuthenticated) {
+      router.push("/login")
+    }
+  }, [isAuthenticated, _hasHydrated, router])
+
+  // Show loading state while hydrating
+  if (!_hasHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
 
   if (!isAuthenticated) {
     return null
