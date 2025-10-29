@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Invoice } from '../models/Invoice';
 import { GridUser } from '../gridsession.db';
 import { createInvoice, deleteInvoice, invoiceById, invoices, updateInvoiceStatus } from '../controllers/invoice';
+import { startTrackPayment, stopTrackPayment, getTrackingStatus } from '../controllers/trackPayment';
 
 const router = Router();
 
@@ -19,5 +20,10 @@ router.patch('/:id/status', updateInvoiceStatus);
 
 // Delete invoice
 router.delete('/:id', deleteInvoice);
+
+// Payment tracking routes
+router.post('/track/start', startTrackPayment);
+router.post('/track/stop/:invoiceId', stopTrackPayment);
+router.get('/track/status/:invoiceId', getTrackingStatus);
 
 export default router;

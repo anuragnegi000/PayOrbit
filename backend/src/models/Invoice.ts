@@ -15,6 +15,9 @@ export interface IInvoice extends Document {
     price: number;
   }>;
   paymentLink?: string;
+  paidAt?: Date;
+  transferId?: string;
+  trackingStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +65,15 @@ const InvoiceSchema: Schema = new Schema(
     ],
     paymentLink: {
       type: String,
+    },
+    paidAt: {
+      type: Date,
+    },
+    transferId: {
+      type: String,
+    },
+    trackingStartedAt: {
+      type: Date,
     },
   },
   {

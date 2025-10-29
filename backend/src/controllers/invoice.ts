@@ -106,7 +106,7 @@ export const invoices=async(req:Request,res:Response)=>{
 }
 
 
-export const invoiceById=async(res:Response,req:Request)=>{
+export const invoiceById=async(req:Request,res:Response)=>{
     try {
       const { id } = req.params;
       const invoice = await Invoice.findById(id);

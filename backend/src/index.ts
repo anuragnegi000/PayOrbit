@@ -3,7 +3,6 @@ import { checkAndInitAuth, completeKYC, createVirtualAccount, gridAccountCreatio
 import bodyParser from "body-parser";
 import {connectDB} from "./db"
 import { virtualAccount } from './controllers/virtualAccount';
-import { trackPayment } from './controllers/trackPayment';
 import cors from 'cors';
 import invoiceRouter from './routes/invoice.route';
 import userRouter from './routes/user.route';

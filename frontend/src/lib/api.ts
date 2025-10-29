@@ -80,4 +80,14 @@ export const invoiceAPI = {
   
   delete: (invoiceId: string) =>
     api.delete(`/api/invoice/${invoiceId}`),
+  
+  // Payment tracking
+  startTracking: (invoiceId: string) =>
+    api.post('/api/invoice/track/start', { invoiceId }),
+  
+  stopTracking: (invoiceId: string) =>
+    api.post(`/api/invoice/track/stop/${invoiceId}`),
+  
+  getTrackingStatus: (invoiceId: string) =>
+    api.get(`/api/invoice/track/status/${invoiceId}`),
 };
