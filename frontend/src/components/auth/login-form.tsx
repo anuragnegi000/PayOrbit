@@ -36,12 +36,20 @@ export function LoginForm({ onOtpSent }: LoginFormProps) {
   })
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log("Submitting login form with data:", data)
     try {
       setIsLoading(true)
       setError("")
-      await authAPI.login(data.email, data.fullName)
+      console.log("🔄 Calling authAPI.login...")
+      const response = await authAPI.login(data.email, data.fullName)
+      console.log("✅ API Response:", response)
+      console.log("OTP sent successfully to", data.email)
       onOtpSent(data.email)
+      console.log("OTP sent successfully finally to", data.email)
     } catch (err: any) {
+      console.error("❌ Login Error:", err)
+      console.error("❌ Error Response:", err.response)
+      console.error("❌ Error Message:", err.message)
       setError(err.response?.data?.message || "Failed to send OTP. Please try again.")
     } finally {
       setIsLoading(false)

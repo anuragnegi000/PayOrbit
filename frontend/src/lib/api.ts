@@ -37,22 +37,22 @@ export default api;
 
 export const authAPI = {
   login: (email: string, fullName: string) => 
-    api.post('/create-account', { email, fullName }),
+    api.post('/api/user/create-account', { email, fullName }),
   
   verifyOtp: (email: string, otpCode: string) =>
-    api.post('/verify-otp', { email, otpCode }),
+    api.post('/api/user/verify-otp', { email, otpCode }),
   
   sendOTP: (email: string) => 
-    api.post('/create-account', { email, fullName: email.split('@')[0] }),
+    api.post('/api/user/create-account', { email, fullName: email.split('@')[0] }),
   
   verifyOTP: (email: string, otpCode: string) =>
-    api.post('/verify-otp', { email, otpCode }),
+    api.post('/api/user/verify-otp', { email, otpCode }),
 };
 
 export const invoiceAPI = {
-  getAll: (merchantEmail: string) => api.get(`/api/invoices?merchantEmail=${encodeURIComponent(merchantEmail)}`),
+  getAll: (merchantEmail: string) => api.get(`/api/invoice?merchantEmail=${encodeURIComponent(merchantEmail)}`),
   
-  getById: (id: string) => api.get(`/api/invoices/${id}`),
+  getById: (id: string) => api.get(`/api/invoice/${id}`),
   
   create: (data: {
     amount: number;
@@ -67,11 +67,17 @@ export const invoiceAPI = {
       quantity: number;
       price: number;
     }>;
-  }) => api.post('/api/invoices/create', data),
+  }) => api.post('/api/invoice/create', data),
   
   getUserInvoices: (email: string, status?: string) =>
-    api.get(`/api/invoices/user/${email}${status ? `?status=${status}` : ''}`),
+    api.get(`/api/invoice/user/${email}${status ? `?status=${status}` : ''}`),
   
   markAsPaid: (invoiceId: string) =>
-    api.patch(`/api/invoices/${invoiceId}/pay`),
+    api.patch(`/api/invoice/${invoiceId}/status`),
+  
+  updateStatus: (invoiceId: string, status: string) =>
+    api.patch(`/api/invoice/${invoiceId}/status`, { status }),
+  
+  delete: (invoiceId: string) =>
+    api.delete(`/api/invoice/${invoiceId}`),
 };

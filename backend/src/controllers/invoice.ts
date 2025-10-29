@@ -73,7 +73,7 @@ import {Request, Response} from "express";
 // }
 
 
-export const invoices=async(res:Response,req:Request)=>{
+export const invoices=async(req:Request,res:Response)=>{
   try {
       const { merchantEmail } = req.query;
       
