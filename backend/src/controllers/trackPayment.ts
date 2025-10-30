@@ -183,7 +183,7 @@ function startTracking(
 
       console.log(`   Found ${transfers.data.length} processed transfers`);
 
-      const matchingPayment = transfers.data.find(t =>
+      const matchingPayment = transfers.data.find((t: any) =>
         parseFloat(t.amount) === parseFloat(expectedAmount)
       );
 

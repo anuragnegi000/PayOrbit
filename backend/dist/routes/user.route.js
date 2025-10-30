@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const createAccount_1 = require("../controllers/createAccount");
+const virtualAccount_1 = require("../controllers/virtualAccount");
+const router = (0, express_1.Router)();
+router.post("/create-account", createAccount_1.gridAccountCreation);
+router.post("/verify-otp", createAccount_1.verifyOtp);
+router.post("/virtual-account", virtualAccount_1.virtualAccount);
+exports.default = router;
