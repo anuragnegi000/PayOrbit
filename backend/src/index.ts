@@ -11,15 +11,17 @@ import { GridUser } from './gridsession.db';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-(async () => {
-  await connectDB();
+// Initialize database connection
+connectDB().catch(err => {
+  console.error("Failed to connect to database:", err);
+});
 
 app.use(express.json());
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"]
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://*.vercel.app"]
 }))
 
 // Mount invoice routes
@@ -140,8 +142,12 @@ app.use('/api/user',userRouter)
 //     }
 // })
 
-app.listen(PORT, () => {
+// Only start server if not in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-});
+  });
+}
 
-})();
+// Export for Vercel serverless
+export default app;
