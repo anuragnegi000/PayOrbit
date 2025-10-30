@@ -25,6 +25,7 @@ app.use(cors({
         "http://localhost:3000",
         "http://localhost:3001",
         "https://pay-orbit-frontend.vercel.app",
+        "https://payorbit.live",
         /^https:\/\/.*\.vercel\.app$/
     ],
     credentials: true,
