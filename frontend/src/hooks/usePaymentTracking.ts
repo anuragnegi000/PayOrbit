@@ -16,52 +16,6 @@ export function usePaymentTracking(invoiceId: string | null, enabled: boolean = 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Start tracking
-  const startTracking = useCallback(async () => {
-    if (!invoiceId) return
-
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      const response = await invoiceAPI.startTracking(invoiceId)
-      
-      if (response.data.success) {
-        toast.success("Payment tracking started")
-        fetchStatus()
-      }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || "Failed to start tracking"
-      setError(errorMsg)
-      toast.error(errorMsg)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [invoiceId])
-
-  // Stop tracking
-  const stopTracking = useCallback(async () => {
-    if (!invoiceId) return
-
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      const response = await invoiceAPI.stopTracking(invoiceId)
-      
-      if (response.data.success) {
-        toast.info("Payment tracking stopped")
-        setTrackingStatus(null)
-      }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || "Failed to stop tracking"
-      setError(errorMsg)
-      toast.error(errorMsg)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [invoiceId])
-
   // Fetch tracking status
   const fetchStatus = useCallback(async () => {
     if (!invoiceId || !enabled) return
@@ -77,10 +31,56 @@ export function usePaymentTracking(invoiceId: string | null, enabled: boolean = 
           toast.success("🎉 Payment received!")
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching tracking status:", err)
     }
   }, [invoiceId, enabled, trackingStatus?.paidAt])
+
+  // Start tracking
+  const startTracking = useCallback(async () => {
+    if (!invoiceId) return
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await invoiceAPI.startTracking(invoiceId)
+      
+      if (response.data.success) {
+        toast.success("Payment tracking started")
+        fetchStatus()
+      }
+    } catch (err) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to start tracking"
+      setError(errorMsg)
+      toast.error(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [invoiceId, fetchStatus])
+
+  // Stop tracking
+  const stopTracking = useCallback(async () => {
+    if (!invoiceId) return
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await invoiceAPI.stopTracking(invoiceId)
+      
+      if (response.data.success) {
+        toast.info("Payment tracking stopped")
+        setTrackingStatus(null)
+      }
+    } catch (err) {
+      const errorMsg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || "Failed to stop tracking"
+      setError(errorMsg)
+      toast.error(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [invoiceId])
 
   // Poll for status updates every 10 seconds when tracking is active
   useEffect(() => {

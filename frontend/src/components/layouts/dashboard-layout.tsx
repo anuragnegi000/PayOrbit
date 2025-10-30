@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/store/authStore"
 import { Button } from "@/components/ui/button"
-import { LogOut, Plus, FileText } from "lucide-react"
+import { LogOut, FileText } from "lucide-react"
 import Link from "next/link"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
