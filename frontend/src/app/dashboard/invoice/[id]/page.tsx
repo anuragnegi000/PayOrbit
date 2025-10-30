@@ -23,7 +23,7 @@ export default function InvoiceDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
-  // Payment tracking hook
+  // Payment tracking hook - enabled by default for pending invoices
   const {
     trackingStatus,
     isLoading: isTrackingLoading,
@@ -37,6 +37,13 @@ export default function InvoiceDetailPage() {
       fetchInvoice()
     }
   }, [invoiceId])
+
+  // Auto-start tracking for pending invoices
+  useEffect(() => {
+    if (invoice?.status === "pending" && invoiceId) {
+      startTracking()
+    }
+  }, [invoice?.status, invoiceId])
 
   // Refresh invoice when tracking status changes to paid
   useEffect(() => {
@@ -65,12 +72,40 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  const handleStartTracking = async () => {
-    await startTracking()
-  }
-
   const handleStopTracking = async () => {
     await stopTracking()
+  }
+
+  // Get status badge style
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "bg-green-100 text-green-800 border-green-300"
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+      case "overdue":
+        return "bg-red-100 text-red-800 border-red-300"
+      case "cancelled":
+        return "bg-gray-100 text-gray-800 border-gray-300"
+      default:
+        return "bg-yellow-100 text-yellow-800 border-yellow-300"
+    }
+  }
+
+  // Get status icon
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "✓"
+      case "pending":
+        return "⏳"
+      case "overdue":
+        return "⚠"
+      case "cancelled":
+        return "✕"
+      default:
+        return "⏳"
+    }
   }
 
   if (isLoading) {
@@ -234,61 +269,112 @@ export default function InvoiceDetailPage() {
               <CardTitle>Payment Tracking</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Automatically track when payment is received for this invoice.
-              </p>
-
-              {trackingStatus?.isTracking ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-green-700 font-medium">Tracking active</span>
-                    {trackingStatus.trackingStartedAt && (
-                      <span className="text-gray-500">
-                        • Started {formatDate(trackingStatus.trackingStartedAt)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleStopTracking}
-                      variant="outline"
-                      size="sm"
-                      disabled={isTrackingLoading}
-                    >
-                      <StopCircle className="h-4 w-4 mr-2" />
-                      Stop Tracking
-                    </Button>
-                    <Button
-                      onClick={refreshStatus}
-                      variant="ghost"
-                      size="sm"
-                      disabled={isTrackingLoading}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh Status
-                    </Button>
+              {/* Payment Status Indicator */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{getStatusIcon(trackingStatus?.status || "pending")}</div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Payment Status</p>
+                    <div className={`mt-1 inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getStatusBadgeStyle(trackingStatus?.status || "pending")}`}>
+                      {(trackingStatus?.status || "pending").toUpperCase()}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <Button
-                  onClick={handleStartTracking}
-                  disabled={isTrackingLoading}
-                >
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  {isTrackingLoading ? "Starting..." : "Start Payment Tracking"}
-                </Button>
+                {trackingStatus?.isTracking && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-green-700 font-medium">Monitoring</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Tracking Info */}
+              {trackingStatus?.trackingStartedAt && (
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Tracking started:</span>{" "}
+                  {formatDate(trackingStatus.trackingStartedAt)}
+                </div>
               )}
 
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-                <p className="font-medium mb-1">💡 How it works:</p>
+              {/* Status Messages */}
+              {trackingStatus?.status === "pending" && (
+                <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    <span className="font-semibold">⏳ Waiting for payment</span>
+                    <br />
+                    The system is actively monitoring for incoming payments. Status will update automatically when payment is received.
+                  </p>
+                </div>
+              )}
+
+              {trackingStatus?.status === "paid" && (
+                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-800">
+                    <span className="font-semibold">✓ Payment received!</span>
+                    <br />
+                    The payment has been successfully processed and confirmed.
+                  </p>
+                  {trackingStatus.transferId && (
+                    <p className="text-xs text-green-700 mt-2 font-mono">
+                      Transfer ID: {trackingStatus.transferId}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {trackingStatus?.status === "overdue" && (
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-red-800">
+                    <span className="font-semibold">⚠ Payment overdue</span>
+                    <br />
+                    This invoice has passed its due date without payment.
+                  </p>
+                </div>
+              )}
+
+              {trackingStatus?.status === "cancelled" && (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-800">
+                    <span className="font-semibold">✕ Invoice cancelled</span>
+                    <br />
+                    This invoice has been cancelled and payment is no longer expected.
+                  </p>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                <p className="font-medium mb-1">💡 Automatic Payment Monitoring:</p>
                 <ul className="list-disc list-inside space-y-1 text-blue-700">
                   <li>System checks for incoming payments every 15 seconds</li>
                   <li>Automatically matches payment amount to invoice</li>
-                  <li>Invoice status updates to "Paid" when payment received</li>
+                  <li>Status updates in real-time when payment is received</li>
                   <li>You'll get a notification when payment is complete</li>
                 </ul>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={refreshStatus}
+                  variant="outline"
+                  size="sm"
+                  disabled={isTrackingLoading}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Status
+                </Button>
+                {trackingStatus?.status === "pending" && trackingStatus?.isTracking && (
+                  <Button
+                    onClick={handleStopTracking}
+                    variant="ghost"
+                    size="sm"
+                    disabled={isTrackingLoading}
+                  >
+                    <StopCircle className="h-4 w-4 mr-2" />
+                    Stop Monitoring
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

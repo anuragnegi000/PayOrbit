@@ -4,6 +4,8 @@ import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
+import Image from "next/image"
+import logo from "../../../public/payorbitLogo.png"
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
@@ -12,8 +14,8 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
-          <div className="rounded-full bg-blue-600 text-white w-10 h-10 flex items-center justify-center font-bold">
-            PO
+          <div className="rounded-full bg-blue-600 text-white w-10 flex items-center justify-center font-bold">
+            {/* <Image className="rounded-full " src={logo} alt=""></Image> */}
           </div>
           <span className="text-lg font-bold text-gray-900">PayOrbit</span>
         </Link>

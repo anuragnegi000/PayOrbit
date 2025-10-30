@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import dashboard from "../../../public/dashboard.png"
+import Image from "next/image"
 
 export default function HeroSection() {
   return (
@@ -37,7 +39,7 @@ export default function HeroSection() {
         >
           <div className="w-full max-w-md rounded-2xl shadow-lg bg-white p-6">
             <div className="h-56 bg-gradient-to-tr from-blue-50 to-white rounded-lg flex items-center justify-center text-gray-400">
-              <span>Dashboard screenshot placeholder</span>
+              <Image src={dashboard} alt="Dashboard Screenshot" className="object-contain h-full w-full" />
             </div>
             <div className="mt-4 text-sm text-gray-600">Invoice example • QR payment ready</div>
           </div>
