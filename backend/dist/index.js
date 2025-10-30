@@ -19,7 +19,15 @@ app.use(express_1.default.json());
 app.use(body_parser_1.default.json()); // for parsing application/json
 app.use(body_parser_1.default.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://*.vercel.app"]
+    origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://pay-orbit-frontend.vercel.app",
+        /^https:\/\/.*\.vercel\.app$/
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // Mount invoice routes
 app.use('/api/invoice', invoice_route_1.default);

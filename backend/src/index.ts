@@ -21,7 +21,15 @@ app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://*.vercel.app"]
+    origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://pay-orbit-frontend.vercel.app",
+        /^https:\/\/.*\.vercel\.app$/
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 // Mount invoice routes
