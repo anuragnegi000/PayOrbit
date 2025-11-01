@@ -15,6 +15,8 @@ export interface IGridUser{
   fullName:string;
   email: string;
   publicKey:string;
+  kycId:string;
+  kycStatus?:string;
   gridId:string;
 }
 
@@ -168,6 +170,14 @@ const GridUserSchema: Schema = new Schema<IGridUser>({
   publicKey: {
     type: String,
     required: true,
+  },
+  kycId:{
+    type: String,
+    required: true,
+  },
+  kycStatus:{
+    type: String,
+    required: false,
   },
   gridId: {
     type: String,
