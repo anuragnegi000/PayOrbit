@@ -153,6 +153,14 @@ const GridUserSchema = new mongoose_1.Schema({
         type: String,
         required: true,
     },
+    kycId: {
+        type: String,
+        required: true,
+    },
+    kycStatus: {
+        type: String,
+        required: false,
+    },
     gridId: {
         type: String,
         required: true,

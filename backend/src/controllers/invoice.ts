@@ -109,7 +109,7 @@ export const invoices=async(req:Request,res:Response)=>{
 export const invoiceById=async(req:Request,res:Response)=>{
     try {
       const { id } = req.params;
-      const invoice = await Invoice.findById(id);
+      const invoice = await Invoice.findById(id).populate('merchant', 'email fullName publicKey');
       
       if (!invoice) {
         return res.status(404).json({ message: 'Invoice not found' });
@@ -171,14 +171,19 @@ export const createInvoice=async(req:Request,res:Response)=>{
       description,
       items,
       status: 'pending',
-      paymentLink: merchantId ? `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pay/${merchantId}` : undefined,
     });
 
+    await invoice.save();
+    
+    // Generate payment link after save (so we have the invoice ID)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    invoice.paymentLink = `${frontendUrl}/pay/${invoice._id}`;
     await invoice.save();
     
     console.log('✅ Invoice created successfully');
     console.log('  Invoice ID:', invoice._id);
     console.log('  Merchant ID:', merchantId);
+    console.log('  Payment Link:', invoice.paymentLink);
 
     res.status(201).json(invoice);
   } catch (error) {

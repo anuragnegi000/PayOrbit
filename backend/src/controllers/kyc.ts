@@ -20,7 +20,7 @@ export const initiateKYC=async(email:string)=>{
             type:'individual',
             email:email,
             full_name:fullName,
-            redirect_uri:'https://myapp.com/kyc-complete'
+            redirect_uri:'https://payorbit.live/kyc-complete'
         })
         console.log("✅ KYC Link Requested:",kycResponse);
         if(!kycResponse.success || !kycResponse.data){
